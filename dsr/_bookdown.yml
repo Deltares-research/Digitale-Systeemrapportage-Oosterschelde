@@ -1,0 +1,21 @@
+link-citations: yes
+before_chapter_script: _common.R
+rmd_files: ["index.Rmd",
+# "010_Inleiding.Rmd",
+# "020_Gebiedsbeschrijving_en_beheer.Rmd",
+"030_Meteorologie_en_klimaat.Rmd",
+# # "040_Abiotiek_terristrisch.Rmd",
+# "050_Waterkwantiteit_en_hydrodynamiek.Rmd",
+# "060_Bathymetrie_en_morfodynamiek.Rmd",
+# "070_Waterkwaliteit_en_bodemkwaliteit.Rmd",
+# "080_Ecologie_terrestrisch.Rmd",
+# "090_Ecologie_water.Rmd",
+# "_500_Referenties.Rmd"
+]
+delete_merged_file: yes
+language:
+  label:
+    fig:     'Figuur '
+    tab:     'Tabel '
+    eq:      'Formule '
+    remark : 'Opmerking '

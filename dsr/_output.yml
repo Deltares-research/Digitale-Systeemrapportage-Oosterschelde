@@ -1,0 +1,39 @@
+bookdown::gitbook:
+  includes:
+    before_body: navbar/navbar.html
+    in_header: clickandzoom.html
+  split_bib: no
+  split_by: chapter
+  css: ["style.css", "draft.css"]
+  config:
+    toc:
+      collapse: section
+      before: |
+        <li><a href="./">Systeemrapportage Oosterschelde</a></li>
+      after: |
+        <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+    download: ["pdf"]
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+  pandoc_args: 
+    -   --wrap=none
+    -   --top-level-division=chapter
+bookdown::bs4_book:
+  # theme:
+  #   primary: "#982a31"
+  #   fg: "#2b2121"
+  #   bg: "#ffffff"
+  includes:
+    before_body: navbar/navbar.html
+    in_header: clickandzoom.html
+  css: ["navbar/navbar.css", "style/deltares.css"]
+
+bookdown::pdf_book:
+  keep_tex: true
+  pandoc_args: --top-level-division=chapter
+  includes:
+    in_header: preamble.tex
+  template: deltares-report-template.tex
+  latex_engine: pdflatex
+# citation_package: natbib # niet in combinatie met Deltares-template

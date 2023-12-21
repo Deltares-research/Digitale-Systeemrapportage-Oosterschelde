@@ -1,0 +1,228 @@
+# Meteorologie en klimaat {#meteo}
+
+
+Voor de meteorologische beschrijving is uitgegaan van de uurgegevens van het KNMI voor station Vlissingen (https://www.knmi.nl/nederland-nu/klimatologie/uurgegevens). 
+
+```{r setupMeteo, include=FALSE}
+
+```
+
+```{asis, echo = concept}
+
+cat("## Disclaimer concept systeemrapportage.  
+    
+    De informatie op deze website is op dit moment onder constructie en bedoeld voor een beperkt publiek. Niets van deze website mag worden gebruikt door derden. De voor deze concept systeemrapportage gebruikte data kan bij de bronhouder opgevraagd worden. Voor formeel gebruik en formele referentie wordt verwezen naar de [DeltaExpertise wiki](https://www.deltaexpertise.nl/) waar de vigerende definitieve systeemrapportage is gepubliceerd.")
+```
+
+```{r leesDataMeteo}
+# nieuwe data gedownload via https://www.knmi.nl/nederland-nu/klimatologie/daggegevens (alleen Vlissingen want dit is de enige gehomogeniseerde tijdreeks in deze buurt)
+
+# YYYYMMDD  = Datum (YYYY=jaar MM=maand DD=dag) / Date (YYYY=year MM=month DD=day)
+# DDVEC     = Vectorgemiddelde windrichting in graden (360=noord, 90=oost, 180=zuid, 270=west, 0=windstil/variabel). Zie http://www.knmi.nl/kennis-en-datacentrum/achtergrond/klimatologische-brochures-en-boeken / Vector mean wind direction in degrees (360=north, 90=east, 180=south, 270=west, 0=calm/variable)
+# FHVEC     = Vectorgemiddelde windsnelheid (in 0.1 m/s). Zie http://www.knmi.nl/kennis-en-datacentrum/achtergrond/klimatologische-brochures-en-boeken / Vector mean windspeed (in 0.1 m/s)
+# FG        = Etmaalgemiddelde windsnelheid (in 0.1 m/s) / Daily mean windspeed (in 0.1 m/s) 
+# FHX       = Hoogste uurgemiddelde windsnelheid (in 0.1 m/s) / Maximum hourly mean windspeed (in 0.1 m/s)
+# FHXH      = Uurvak waarin FHX is gemeten / Hourly division in which FHX was measured
+# FHN       = Laagste uurgemiddelde windsnelheid (in 0.1 m/s) / Minimum hourly mean windspeed (in 0.1 m/s)
+# FHNH      = Uurvak waarin FHN is gemeten / Hourly division in which FHN was measured
+# FXX       = Hoogste windstoot (in 0.1 m/s) / Maximum wind gust (in 0.1 m/s)
+# FXXH      = Uurvak waarin FXX is gemeten / Hourly division in which FXX was measured
+# TG        = Etmaalgemiddelde temperatuur (in 0.1 graden Celsius) / Daily mean temperature in (0.1 degrees Celsius)
+# TN        = Minimum temperatuur (in 0.1 graden Celsius) / Minimum temperature (in 0.1 degrees Celsius)
+# TNH       = Uurvak waarin TN is gemeten / Hourly division in which TN was measured
+# TX        = Maximum temperatuur (in 0.1 graden Celsius) / Maximum temperature (in 0.1 degrees Celsius)
+# TXH       = Uurvak waarin TX is gemeten / Hourly division in which TX was measured
+# T10N      = Minimum temperatuur op 10 cm hoogte (in 0.1 graden Celsius) / Minimum temperature at 10 cm above surface (in 0.1 degrees Celsius)
+# T10NH     = 6-uurs tijdvak waarin T10N is gemeten / 6-hourly division in which T10N was measured; 6=0-6 UT, 12=6-12 UT, 18=12-18 UT, 24=18-24 UT 
+# SQ        = Zonneschijnduur (in 0.1 uur) berekend uit de globale straling (-1 voor <0.05 uur) / Sunshine duration (in 0.1 hour) calculated from global radiation (-1 for <0.05 hour)
+# SP        = Percentage van de langst mogelijke zonneschijnduur / Percentage of maximum potential sunshine duration
+# Q         = Globale straling (in J/cm2) / Global radiation (in J/cm2)
+# DR        = Duur van de neerslag (in 0.1 uur) / Precipitation duration (in 0.1 hour)
+# RH        = Etmaalsom van de neerslag (in 0.1 mm) (-1 voor <0.05 mm) / Daily precipitation amount (in 0.1 mm) (-1 for <0.05 mm)
+# RHX       = Hoogste uursom van de neerslag (in 0.1 mm) (-1 voor <0.05 mm) / Maximum hourly precipitation amount (in 0.1 mm) (-1 for <0.05 mm)
+# RHXH      = Uurvak waarin RHX is gemeten / Hourly division in which RHX was measured
+# PG        = Etmaalgemiddelde luchtdruk herleid tot zeeniveau (in 0.1 hPa) berekend uit 24 uurwaarden / Daily mean sea level pressure (in 0.1 hPa) calculated from 24 hourly values
+# PX        = Hoogste uurwaarde van de luchtdruk herleid tot zeeniveau (in 0.1 hPa) / Maximum hourly sea level pressure (in 0.1 hPa)
+# PXH       = Uurvak waarin PX is gemeten / Hourly division in which PX was measured
+# PN        = Laagste uurwaarde van de luchtdruk herleid tot zeeniveau (in 0.1 hPa) / Minimum hourly sea level pressure (in 0.1 hPa)
+# PNH       = Uurvak waarin PN is gemeten / Hourly division in which PN was measured
+# VVN       = Minimum opgetreden zicht / Minimum visibility; 0: <100 m, 1:100-200 m, 2:200-300 m,..., 49:4900-5000 m, 50:5-6 km, 56:6-7 km, 57:7-8 km,..., 79:29-30 km, 80:30-35 km, 81:35-40 km,..., 89: >70 km)
+# VVNH      = Uurvak waarin VVN is gemeten / Hourly division in which VVN was measured
+# VVX       = Maximum opgetreden zicht / Maximum visibility; 0: <100 m, 1:100-200 m, 2:200-300 m,..., 49:4900-5000 m, 50:5-6 km, 56:6-7 km, 57:7-8 km,..., 79:29-30 km, 80:30-35 km, 81:35-40 km,..., 89: >70 km)
+# VVXH      = Uurvak waarin VVX is gemeten / Hourly division in which VVX was measured
+# NG        = Etmaalgemiddelde bewolking (bedekkingsgraad van de bovenlucht in achtsten, 9=bovenlucht onzichtbaar) / Mean daily cloud cover (in octants, 9=sky invisible)
+# UG        = Etmaalgemiddelde relatieve vochtigheid (in procenten) / Daily mean relative atmospheric humidity (in percents)
+# UX        = Maximale relatieve vochtigheid (in procenten) / Maximum relative atmospheric humidity (in percents)
+# UXH       = Uurvak waarin UX is gemeten / Hourly division in which UX was measured
+# UN        = Minimale relatieve vochtigheid (in procenten) / Minimum relative atmospheric humidity (in percents)
+# UNH       = Uurvak waarin UN is gemeten / Hourly division in which UN was measured
+# EV24      = Referentiegewasverdamping (Makkink) (in 0.1 mm) / Potential evapotranspiration (Makkink) (in 0.1 mm)
+
+
+rawDataFile <- file.path(datadir, "knmi", "raw", "etmgeg_310.txt")
+knmidataheader <- read_lines(rawDataFile, skip = 51, n_max = 1)
+header <- trimws(str_split(gsub("#", "", knmidataheader), pattern = ",", simplify = T))[,]
+knmidata <- read_delim(rawDataFile, 
+                       skip = 52, delim = ",", guess_max = 50000, trim_ws = T,
+                       # col_types = cols(.default = "d"),
+                       col_names = header) %>%
+  dplyr::mutate(
+    datum = lubridate::ymd(YYYYMMDD)
+  ) %>%
+  dplyr::select(
+    STN,
+    datum,
+    `temperatuur daggemiddeld` = TG,
+    `windrichting daggemiddeld` = DDVEC, 
+    `windsnelheid daggemiddeld` = FG, 
+    windstoot = FXX,
+    `hoogste uurgemiddelde` = FHX,
+    duurzon = SQ, 
+    straling = Q,
+    `Neerslag etmaalsom`  = RH,
+    `Referentiegewasverdamping (Makkink)` = EV24
+  ) %>%
+  filter(year(datum) <= endyear)
+
+```
+
+
+
+##  Luchttemperatuur
+
+De temperatuurtrends zijn apart bepaald voor het zomer- en winterhalfjaar. Het zomerhalfjaar is gedefinieerd van 1 maart - 31 oktober. 
+
+De gemiddelde temperatuur in het zomerhalfjaar in Vlissingen is van 1970 tot nu toegenomen van ongeveer 12.5 oC begin 70er jaren tot ruim 14 oC in de laatste 10 jaar. De stijging is nog duidelijker te zien in de jaarlijks optredende maximum temperatuur in het zomerhalfjaar ( (roze band in figuur \@ref(fig:zomertemperatuur)). De maximum temperatuur in het zomerhalfjaar is in dezelfde periode gestegen van 22 tot 25 oC.
+
+(ref:zomertemperatuurlabel) Zomergemiddelde (maart - oktober) van de daggemiddelde luchttemperatuur bij de Oosterschelde (stations Vlissingen en Wilhelminadorp) met minima en maxima. 
+
+```{r zomertemperatuur, fig.cap="(ref:zomertemperatuurlabel)"}
+summertemp <- knmidata %>%
+  filter(month(datum) %in% summermonths) %>%
+  mutate(year = as.Date(paste(year(datum), "06", "01", sep = "-"))) %>%
+  group_by(year) %>%
+  summarize(
+    `zomergemiddelde` = mean(`temperatuur daggemiddeld`)/10,
+    `zomergemiddelde min` = min(`temperatuur daggemiddeld`)/10,
+    `zomergemiddelde max` = max(`temperatuur daggemiddeld`)/10
+    )
+summertempts <- xts::as.xts(summertemp[,2:4], order.by = summertemp$year)
+storage.mode(summertempts) = "numeric"
+dygraphs::dygraph(summertempts, width = 700, height = 300) %>%
+  dygraphs::dySeries(c("zomergemiddelde min", "zomergemiddelde", "zomergemiddelde max"), label = "zomertemperatuur lucht", color = "red")
+```
+
+De gemiddelde temperatuur in het winterhalfjaar lijkt in deze periode ook iets gestegen, maar dit is minder duidelijk. Wel is de maximum temperatuur bijvoorbeeld na 2000 een paar keer rond de 15 Oc geweest, iets dat in de 30 jaar voor 2000 niet voorkwam. Desondanks was 2010 een gemiddeld koude winter, net als 1996, en 1985 - 1987. 
+
+(ref:wintertemperatuurlabel) Wintergemiddelde (november - februari) van de daggemiddelde luchttemperatuur bij de Oosterschelde (stations Vlissingen en Wilhelminadorp) met minima en maxima. 
+
+```{r wintertemperatuur, fig.cap="(ref:wintertemperatuurlabel)"}
+yeartemp <- knmidata %>%
+  mutate(datum = ymd(datum)) %>%
+  filter(month(datum) %in% wintermonths) %>%
+  mutate(year = as.Date(paste(year(datum), "06", "01", sep = "-"))) %>%
+  group_by(year) %>%
+  summarize(`wintergemiddelde` = mean(`temperatuur daggemiddeld`)/10,
+            `wintergemiddelde min` = min(`temperatuur daggemiddeld`)/10,
+            `wintergemiddelde max` = max(`temperatuur daggemiddeld`)/10)
+  
+yeartempts <- xts::as.xts(yeartemp[,2:4], order.by = yeartemp$year)
+storage.mode(yeartempts) = "numeric"
+dygraphs::dygraph(yeartempts, width = 700, height = 300) %>%
+  dygraphs::dySeries(c("wintergemiddelde min", "wintergemiddelde", "wintergemiddelde max"), label = "wintertemperatuur lucht")
+```
+
+##  Wind
+
+De meteo gegevens zijn verkregen via het [KNMI](http://www.knmi.nl) voor station Vlissingen. 
+
+De richting van de wind is over de periode 1998 tot en met `r endyear` is overwegend zuid-zuidwest geweest. De verdeling van windsterkte per richting is te zien in figuur \@ref(fig:windroosOosterschelde) 
+
+(ref:windroosOosterscheldeLabel) Windroos voor gecombineerde data van Vlissingen over de periode 1998 - `r endyear`.
+
+```{r windroosOosterschelde, comment=F, fig.width = 7, fig.cap="(ref:windroosOosterscheldeLabel)"}
+winddata <- knmidata %>% 
+  filter(year(datum) >= 1998, !is.na(`windrichting daggemiddeld`)) %>% 
+  dplyr::select(datum, `windrichting daggemiddeld`, `windsnelheid daggemiddeld`, windstoot)
+
+plot.windrose(spd = winddata$`windsnelheid daggemiddeld`/10, dir = winddata$`windrichting daggemiddeld`, palette = "YlOrRd", name_fill= "Windsnelheid (m/s)")
+```
+
+<!-- De verdeling van windsterkte over de periode van 1998 - 2018 is te zien in figuur \@ref(fig:windsnelheidverdelingOosterschelde). Hier is te zien dat er in de winter gemiddeld hogere windsnelheden optreden.  -->
+
+(ref:windsnelheidverdelingOosterscheldeLabel) Verdeling van windsterkte over de periode 1998 - 2018.
+
+```{r windsnelheidverdelingOosterschelde, fig.width = 5, fig.height = 3, fig.cap="(ref:windsnelheidverdelingOosterscheldeLabel)", include=F}
+winddata %>% mutate(maand = as.factor(month(datum))) %>% 
+  mutate(seizoen = ifelse(maand %in% c(3:10), "zomer", "winter")) %>%
+  ggplot(aes(x = `windsnelheid daggemiddeld`/10)) + 
+  geom_density(aes(fill = seizoen), alpha = 0.4) + 
+  ylab("frequentie van voorkomen (%)")+
+  xlab("daggemiddelde windsnelheid")+
+  theme_minimal()
+```
+
+De windsnelheid per jaar en seizoen laat zien dat er in de winter over het algmeen meer wind is (figuur \@ref(fig:windHeatmapOosterschelde)).  Deze figuur toont ook de variatie in maandgemiddelde windsnelheid over de jaren en seizoenen . Jaren met hoge maandgemiddelde in het voorjaar zijn 2002, 2008, 2014. Hoge maandgemiddelde wind in de herfst trad op in 2015. 
+
+(ref:windHeatmapOosterscheldeLabel) Variatie van windsnelheden over de lange termijn (horizontaal) en over het jaar (verticaal) over de periode 1998 - `r endyear`.
+
+```{r windHeatmapOosterschelde, fig.height=4, fig.width = 8, fig.cap="(ref:windHeatmapOosterscheldeLabel)"}
+winddata %>% mutate(jaar = year(datum), maand = as.factor(month(datum))) %>%
+  group_by(jaar, maand) %>% summarize(`maandgemiddelde wind in m/s`  = mean(`windsnelheid daggemiddeld`/10)) %>%
+  ggplot(aes(jaar, maand)) + geom_tile(aes(fill = `maandgemiddelde wind in m/s`)) +
+  # scale_fill_viridis_c() + 
+  # scale_fill_gradient("Maandgemiddelde \n windsnelheid", low = "white", high = "blue") +
+  scale_fill_gradientn(colours=rev(rainbow(4))) +
+  theme_minimal() + theme(legend.position = "bottom")
+```
+
+Wanneer de windkracht meer dan 9 beaufort is spreken we van een storm. In de onderstaande grafiek (figuur \@ref(fig:stormdagen)) zijn het aantal sormdagen per jaar weergegeven op basis van het in station Vlissingen. 
+
+(ref:stormdagenLabel) Stormdagen per jaar over de periode 1998 - `r endyear`
+
+```{r stormdagen, fig.width = 8, fig.height = 4.5, fig.cap="(ref:stormdagenLabel)"}
+stormdagen <- knmidata %>%
+  mutate(jaar=year(datum),
+         storm=if_else(`hoogste uurgemiddelde`/10> 20.8,1,0), # dit moet hoogste uurgemiddelde windsnelheid worden FHX!
+         zstorm=if_else(`hoogste uurgemiddelde`/10> 24.5,1,0),
+         zzstorm=if_else(`hoogste uurgemiddelde`/10> 28.5,1,0),
+         orkaan=if_else(`hoogste uurgemiddelde`/10> 32.6,1,0)) %>%
+  group_by(jaar)%>%
+  summarize(stormdag=sum(storm),
+            zstormdag=sum(zstorm),
+            zzstormdag=sum(zzstorm),
+            orkaandag=sum(orkaan)) %>%
+    pivot_longer(cols = 2:5, names_to = "stormclassificatie", values_to = "aantal dagen")
+
+ggplot(stormdagen, aes(jaar, `aantal dagen`)) +
+  # geom_col(aes(fill = stormclassificatie), position = "dodge") +
+  geom_step(aes(color = stormclassificatie), size = 1) +
+  facet_wrap( ~ stormclassificatie) +
+  theme(legend.position = "bottom")
+```
+
+<!-- ##  Zoninstraling -->
+
+<!-- De variatie van zoninstraling over de jaren en seizoenen is zichtbaar in figuur \@ref(fig:instralingHeatmapOosterschelde) -->
+
+<!-- ```{r instralingHeatmapOosterschelde, fig.height=4, fig.width = 10, fig.cap="Variatie van instraling over de lange termijn (horizontaal) en over het jaar (verticaal) over de periode 1998 - 2018 in J/cm2. "} -->
+<!-- instralingDAta <- knmidata %>% filter(year(datum) >= 1998) %>% dplyr::select(datum, duurzon, straling) -->
+
+<!-- instralingDAta %>% mutate(jaar = year(datum), week = as.factor(week(datum))) %>% -->
+<!--   group_by(jaar, week) %>% summarize(`weekgemiddelde straling` = mean(straling)) %>% -->
+<!--   ggplot(aes(jaar, week)) + geom_tile(aes(fill = `weekgemiddelde straling`)) + scale_fill_viridis_c() + theme_minimal() + -->
+<!--   ggtitle("Instraling in J/cm2") -->
+<!-- ``` -->
+
+<!-- ```{r zonduurHeatmapOosterschelde, fig.height=4, fig.width = 10, fig.cap="Variatie van instraling over de lange termijn (horizontaal) en over het jaar (verticaal) over de periode 1998 - 2018. (check eenheden!!!)"} -->
+<!-- knmidata %>% filter(year(datum) >= 1998) %>%  -->
+<!--   dplyr::select(datum, duurzon, straling) %>% -->
+<!--   mutate(jaar = year(datum), week = as.factor(week(datum))) %>% -->
+<!--   group_by(jaar, week) %>% summarize(`weekgemiddelde zonduur` = mean(duurzon/10)) %>% -->
+<!--   ggplot(aes(jaar, week)) + geom_tile(aes(fill = `weekgemiddelde zonduur`)) + scale_fill_viridis_c() + -->
+<!--   theme_minimal() + -->
+<!--   ggtitle("instraling in uren per dag") -->
+<!-- ``` -->
+
+
+

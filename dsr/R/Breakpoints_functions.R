@@ -1,0 +1,118 @@
+
+## for testing
+# WQwaterbase <- readr::read_csv("data/waterbase_collected2.csv"#,
+#                                # col_types = "ciiiTcniiic", 
+#                                # delim = ";"
+# ) %>% 
+#   mutate(locatie = as.factor(locatie), parameter = as.factor(parameter))
+
+
+
+plotBreakPointTimeSeries <- function(df, mylocation, mysubstance, h = NULL, breaks = NULL, minjaar, maxjaar, jaarnaam = "winterjaar"){
+  require(tidyverse)
+  require(xts)
+  require(zoo)
+  require(strucchange)
+  
+  # df$winterjaar <- unlist(df[,jaarnaam])
+
+  subset <- df[
+    df[,"locatie"] == mylocation & 
+      df[,"parameter"] == mysubstance &
+      df[,jaarnaam] <= maxjaar & df[,jaarnaam] >= minjaar,] %>%
+    dplyr::mutate(parameter = as.character(parameter), locatie = as.character(locatie)) %>%
+    dplyr::filter(!is.na(waarde)) %>%
+    dplyr::group_by(maand, winterjaar, parameter, locatie) %>% 
+    dplyr::summarize(maandgemiddelde = mean(waarde, na.rm = T)) %>%
+    dplyr::group_by(winterjaar, parameter, locatie) %>% 
+    dplyr::summarize(jaargemiddelde = mean(maandgemiddelde, na.rm = T)) %>%
+    dplyr::ungroup() %>%
+  # mutate(winterjaar = as.Date(as.character(winterjaar), "%Y")) %>%
+  as.data.frame() 
+# %>%  ## necessary to convert tibble to dataframe for time series 
+#   base::split(interaction(.$parameter, .$locatie))
+
+  if(length(subset[,1])<1) return(NA)
+  g <- data.frame(winterjaar = seq(min(subset[,jaarnaam]), max(subset[,jaarnaam]), by = 1)) %>% 
+    dplyr::left_join(subset) %>% 
+    dplyr::mutate(approx = na.approx(.[,"jaargemiddelde"]))
+  number_of_na <- length(which(is.na(g[,"jaargemiddelde"])))
+  # print(paste("number of NA =", number_of_na))
+  tsInterpolated <- ts(g[,"approx"],  start = min(g[,jaarnaam]), end = max(g[,jaarnaam]))
+#   return(g)
+# }
+# 
+# makeInterpolatedTimeseries(subset[[20]], "jaargemiddelde", "winterjaar")
+
+# timeserieslist <- lapply(subset, makeInterpolatedTimeseries, "jaargemiddelde", "winterjaar")
+
+# plotBreakPointTimeSeries <- function(timeserieslist, location, substance){
+
+  # timeseries <- timeserieslist[[paste(substance, location, sep = ".")]]
+  name = paste(mylocation, mysubstance)
+  bp <- strucchange::breakpoints(tsInterpolated ~ 1, h = h, breaks = breaks)
+  fm0 <- lm(tsInterpolated ~ 1)
+  fm1 <- lm(tsInterpolated ~ breakfactor(bp))
+  plot(tsInterpolated, xlab = "jaar", ylab = name)
+  lines(ts(fitted(fm0), start = min(time(tsInterpolated))), col = 3)
+  lines(ts(fitted(fm1), start = min(time(tsInterpolated))), col = 4)
+  lines(bp)
+  ci_subset_ts <- confint(bp)
+  ci_subset_ts
+  lines(ci_subset_ts)
+
+}
+
+# location <- "Dreischor"
+# substance <- "Chlfa_ug/l"
+# 
+# plotBreakPointTimeSeries(df = WQwaterbase, mylocation = location, mysubstance = substance, minjaar = 1970, maxjaar = 2017)
+# dev.off()
+
+
+
+##  in progress  ## idea is to plot multiple breakpointgraphs efficiently
+##  
+plotBreakPointMultipleTimeSeries <- function(df, mylocation, mysubstance, h = NULL, breaks = NULL, minjaar, maxjaar, jaarnaam = "winterjaar"){
+  require(tidyverse)
+  require(xts)
+  require(zoo)
+  require(strucchange)
+  
+  # df$winterjaar <- unlist(df[,jaarnaam])
+  
+  subset <- df[
+    df[,"locatie"] %in% mylocation & 
+      df[,"parameter"] %in% mysubstance &
+      df[,jaarnaam] <= maxjaar & df[,jaarnaam] >= minjaar,] #%>%
+  # mutate(parameter = as.character(parameter), locatie = as.character(locatie)) %>%
+  # filter(!is.na(waarde)) %>%
+  # group_by(winterjaar, parameter, locatie) %>% 
+  # summarize(jaargemiddelde = mean(waarde)) %>%
+  # ungroup() %>%
+  # mutate(winterjaar = as.Date(as.character(winterjaar), "%Y")) %>%
+  # as.data.frame() #%>% split(.$parameter)
+  return(subset)
+  # %>%  ## necessary to convert tibble to dataframe for time series 
+  #   base::split(interaction(.$parameter, .$locatie))
+  # if(length(subset[,1])<1) return(NA)
+  # g <- data.frame(winterjaar = seq(min(subset[,jaarnaam]), max(subset[,jaarnaam]), by = 1)) %>% 
+  #   left_join(subset) %>% 
+  #   mutate(approx = na.approx(.[,"jaargemiddelde"]))
+  # number_of_na <- length(which(is.na(g[,"jaargemiddelde"])))
+  # print(paste("number of NA =", number_of_na))
+  # tsInterpolated <- ts(g[,"approx"],  start = min(g[,jaarnaam]), end = max(g[,jaarnaam]))
+  # name = paste(location, substance)
+  # bp <- breakpoints(tsInterpolated ~ 1, h = h, breaks = breaks)
+  # fm0 <- lm(tsInterpolated ~ 1)
+  # fm1 <- lm(tsInterpolated ~ breakfactor(bp))
+  # plot(tsInterpolated, xlab = "jaar", ylab = name)
+  # lines(ts(fitted(fm0), start = min(time(tsInterpolated))), col = 3)
+  # lines(ts(fitted(fm1), start = min(time(tsInterpolated))), col = 4)
+  # lines(bp)
+  # ci_subset_ts <- confint(bp)
+  # ci_subset_ts
+  # lines(ci_subset_ts)
+  # 
+}
+
